@@ -1,0 +1,91 @@
+from bs4 import BeautifulSoup
+import requests
+import smtplib
+import mmap
+import time
+import datetime
+import matplotlib.pyplot as plt
+import csv
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email import encoders
+
+
+def sendmail(msg, msgImage):
+    msgRoot = MIMEMultipart('related')
+    fromaddr = 'blazej.broncel@gmail.com'
+    toaddrs = 'blabro@o2.pl'
+    msg = MIMEText(msg)
+    msgRoot.attach(msg)
+    msgRoot.attach(msgImage)
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login(fromaddr, '8pz6H86r.')
+    server.sendmail(fromaddr, toaddrs, msgRoot.as_string())
+    server.quit()
+
+
+def emailJob(msg):
+    print('emailJob')
+    imgname = 'actualPlot.png'
+    attachment = open(imgname, 'rb')
+    msgImage = MIMEBase('application', 'octet-stream')
+    msgImage.set_payload(attachment.read())
+    encoders.encode_base64(msgImage)
+    msgImage.add_header('Content-Disposition', "attachment; filename= " + imgname)
+    attachment.close()
+    sendmail(msg, msgImage)
+
+
+import matplotlib.ticker as ticker
+def savefig(msg):
+    print('savefig')
+    dateOfYear = datetime.datetime.now().date()
+    f = open("data.txt", "a")
+    f.write('{}'.format(dateOfYear) + "," + msg + "\n")
+    x = []
+    y = []
+    with open('data.txt', 'r') as csvfile:
+        plots = csv.reader(csvfile, delimiter=',')
+        for row in plots:
+            x.append((row[0]))
+            y.append(float(row[1]))
+    print(y)
+    plt.xlabel('x')
+    plt.ylabel('y')
+    fig, ax = plt.subplots(1,1)
+    ax.plot(x, y)
+    plt.xticks(rotation=90)
+    tick_spacing = 1.8
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
+    #plt.show()
+    plt.savefig("actualPlot.png")
+
+
+def takemsg():
+    print('takemsg')
+    url = "https://www.bitmarket.pl/"
+    r = requests.get(url)
+    data = r.text
+    soup = BeautifulSoup(data, "html.parser")
+    span = soup.find("span", id="last_PLNLTC")
+    msg = (span.text[0:6])
+    return msg
+
+
+def job(msg):
+    print("job")
+    savefig(msg)
+    emailJob(msg)
+
+
+with open('data.txt', 'rb', 0) as file, mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ) as s:
+    date = bytes(format(datetime.datetime.now().date()), 'utf-8')
+    if s.find(date) == -1:
+        job(takemsg())
+        print(date)
+    else:
+        #job(takemsg())
+        print('yet another?!?')
+
