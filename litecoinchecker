@@ -21,7 +21,7 @@ def sendmail(msg, msgImage):
     msgRoot.attach(msgImage)
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.starttls()
-    server.login(fromaddr, '8pz6H86r.')
+    server.login(fromaddr, 'typeyourpasswordhere')
     server.sendmail(fromaddr, toaddrs, msgRoot.as_string())
     server.quit()
 
